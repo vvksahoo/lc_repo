@@ -1,0 +1,2066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Networking Fundamentals — System Design Reference</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --bg4: #252d42;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #e8eaf0;
+    --text2: #9ba3b8;
+    --text3: #6b7490;
+    --accent: #7c9eff;
+    --accent2: #4f72e3;
+    --teal: #2dd4bf;
+    --teal2: #0d9488;
+    --amber: #fbbf24;
+    --amber2: #d97706;
+    --coral: #f87171;
+    --coral2: #dc2626;
+    --purple: #a78bfa;
+    --purple2: #7c3aed;
+    --green: #4ade80;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', sans-serif;
+    --serif: 'Fraunces', serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.75;
+    min-height: 100vh;
+  }
+
+  /* ── Sidebar nav ── */
+  .layout { display: flex; min-height: 100vh; }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    z-index: 100;
+    padding: 0 0 2rem;
+  }
+
+  .nav-brand {
+    padding: 1.5rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.75rem;
+  }
+  .nav-brand .label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 500;
+  }
+  .nav-brand h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--text);
+    line-height: 1.3;
+    margin-top: 4px;
+  }
+
+  nav ul { list-style: none; padding: 0 0.75rem; }
+  nav ul li a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    color: var(--text2);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 400;
+    transition: background 0.15s, color 0.15s;
+  }
+  nav ul li a:hover { background: var(--bg3); color: var(--text); }
+  nav ul li a.active { background: var(--bg4); color: var(--accent); }
+  nav ul li a .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--text3);
+  }
+  nav ul li a.active .dot { background: var(--accent); }
+
+  .nav-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 1rem 1.5rem 0.35rem;
+  }
+
+  /* ── Main ── */
+  main {
+    margin-left: 260px;
+    flex: 1;
+    max-width: 860px;
+    padding: 3rem 3rem 6rem;
+  }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 2.5rem 0 3rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+  }
+  .hero .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+  .hero h2 {
+    font-family: var(--serif);
+    font-weight: 300;
+    font-size: 2.4rem;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .hero h2 em { font-style: italic; color: var(--accent); }
+  .hero p {
+    color: var(--text2);
+    max-width: 580px;
+    font-size: 15px;
+  }
+  .topic-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 1.5rem;
+  }
+  .pill {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    background: var(--bg3);
+  }
+
+  /* ── Sections ── */
+  .section {
+    margin-bottom: 4rem;
+    scroll-margin-top: 2rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-number {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    padding-top: 6px;
+    flex-shrink: 0;
+    min-width: 28px;
+  }
+  .section-header h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.5rem;
+    color: var(--text);
+    line-height: 1.25;
+  }
+  .section-header .tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-left: auto;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .tag-foundation { background: rgba(124,158,255,0.15); color: var(--accent); }
+  .tag-infra { background: rgba(45,212,191,0.15); color: var(--teal); }
+  .tag-protocol { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .tag-advanced { background: rgba(167,139,250,0.15); color: var(--purple); }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 1.75rem 0 0.6rem;
+    letter-spacing: 0.01em;
+  }
+  h3:first-child { margin-top: 0; }
+
+  p { color: var(--text2); margin-bottom: 0.85rem; }
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--text); font-weight: 500; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  .card p { font-size: 13.5px; margin-bottom: 0; }
+
+  /* ── Callout ── */
+  .callout {
+    border-left: 3px solid;
+    padding: 1rem 1.25rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1.25rem 0;
+    font-size: 13.5px;
+  }
+  .callout-info { border-color: var(--accent); background: rgba(124,158,255,0.07); }
+  .callout-warn { border-color: var(--amber); background: rgba(251,191,36,0.07); }
+  .callout-danger { border-color: var(--coral); background: rgba(248,113,113,0.07); }
+  .callout-success { border-color: var(--teal); background: rgba(45,212,191,0.07); }
+  .callout-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .callout-info .callout-label { color: var(--accent); }
+  .callout-warn .callout-label { color: var(--amber); }
+  .callout-danger .callout-label { color: var(--coral); }
+  .callout-success .callout-label { color: var(--teal); }
+  .callout p { color: var(--text2); margin: 0; }
+
+  /* ── Code ── */
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--bg4);
+    color: var(--teal);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.7;
+  }
+  .comment { color: var(--text3); }
+  .highlight { color: var(--teal); }
+  .key { color: var(--accent); }
+  .val { color: var(--amber); }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; margin: 1.25rem 0; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead tr { background: var(--bg3); }
+  thead th {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg3); }
+  td {
+    padding: 0.65rem 1rem;
+    color: var(--text2);
+    vertical-align: top;
+  }
+  td:first-child { color: var(--text); font-weight: 500; }
+  td code { font-size: 12px; }
+
+  /* ── Grid ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 1.25rem 0;
+  }
+  .flow-step {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .flow-arrow {
+    color: var(--text3);
+    padding: 0 6px;
+    font-size: 16px;
+  }
+
+  /* ── Comparison blocks ── */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.25rem 0;
+  }
+  .compare-side {
+    background: var(--bg2);
+    padding: 1.25rem 1.5rem;
+  }
+  .compare-side h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+  .compare-side ul {
+    list-style: none;
+    padding: 0;
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .compare-side ul li {
+    padding: 3px 0;
+  }
+  .compare-side ul li::before {
+    content: '·';
+    margin-right: 8px;
+    color: var(--text3);
+  }
+  .bad h4 { color: var(--coral); }
+  .bad ul li::before { color: var(--coral2); content: '✗'; }
+  .good h4 { color: var(--teal); }
+  .good ul li::before { color: var(--teal2); content: '✓'; }
+
+  /* ── Badge ── */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+  .badge-blue { background: rgba(124,158,255,0.15); color: var(--accent); }
+  .badge-teal { background: rgba(45,212,191,0.15); color: var(--teal); }
+  .badge-amber { background: rgba(251,191,36,0.15); color: var(--amber); }
+  .badge-coral { background: rgba(248,113,113,0.15); color: var(--coral); }
+  .badge-purple { background: rgba(167,139,250,0.15); color: var(--purple); }
+  .badge-green { background: rgba(74,222,128,0.15); color: var(--green); }
+
+  /* ── Algorithm cards ── */
+  .algo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .algo-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+  }
+  .algo-card h4 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .algo-card .algo-how { font-size: 12.5px; color: var(--teal); font-family: var(--mono); margin-bottom: 8px; }
+  .algo-card p { font-size: 13px; margin-bottom: 6px; }
+  .algo-card .algo-use { font-size: 12px; color: var(--accent); background: rgba(124,158,255,0.1); padding: 4px 8px; border-radius: 4px; display: inline-block; }
+  .algo-card .algo-risk { font-size: 12px; color: var(--amber); }
+
+  /* ── Layer stack ── */
+  .layer-stack { margin: 1.25rem 0; }
+  .layer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    font-size: 13.5px;
+  }
+  .layer:first-child { border-radius: 10px 10px 0 0; }
+  .layer:last-child { border-bottom: 1px solid var(--border); border-radius: 0 0 10px 10px; }
+  .layer-label {
+    font-weight: 600;
+    min-width: 140px;
+    color: var(--text);
+    font-size: 13px;
+  }
+  .layer-desc { color: var(--text2); font-size: 13px; flex: 1; }
+  .layer-tool { font-size: 11.5px; color: var(--text3); white-space: nowrap; }
+  .layer-1 { background: rgba(124,158,255,0.06); }
+  .layer-2 { background: rgba(45,212,191,0.06); }
+  .layer-3 { background: rgba(251,191,36,0.06); }
+  .layer-4 { background: rgba(248,113,113,0.06); }
+
+  /* ── DR strategy cards ── */
+  .dr-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin: 1rem 0; }
+  .dr-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    font-size: 13px;
+  }
+  .dr-card h4 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .dr-card .rto { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+  .dr-card ul { list-style: none; padding: 0; color: var(--text2); }
+  .dr-card ul li { padding: 2px 0; font-size: 12.5px; }
+  .dr-card ul li::before { content: '·'; margin-right: 6px; color: var(--text3); }
+  .rto-gray { background: var(--bg4); color: var(--text2); }
+  .rto-blue { background: rgba(124,158,255,0.15); color: var(--accent); }
+  .rto-teal { background: rgba(45,212,191,0.15); color: var(--teal); }
+  .rto-green { background: rgba(74,222,128,0.15); color: var(--green); }
+
+  /* ── Real world examples ── */
+  .incident {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--coral);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    font-size: 13.5px;
+  }
+  .incident .inc-title { font-weight: 600; color: var(--text); margin-bottom: 4px; font-size: 13px; }
+  .incident p { margin: 0; color: var(--text2); }
+
+  /* ── Diagrams (inline SVG figures) ── */
+  figure.diagram {
+    margin: 1.5rem 0;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.5rem 1.1rem;
+  }
+  figure.diagram svg { width: 100%; height: auto; display: block; }
+  figure.diagram figcaption {
+    margin-top: 1rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--text3);
+    line-height: 1.65;
+  }
+  figure.diagram figcaption .fig-tag {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(124,158,255,0.12);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  /* shared SVG primitives — colours resolve from CSS vars */
+  .diagram svg text { font-family: var(--sans); }
+  .diagram svg .t   { fill: var(--text);   font-size: 13px;   font-weight: 600; }
+  .diagram svg .t2  { fill: var(--text2);  font-size: 11px; }
+  .diagram svg .t3  { fill: var(--text3);  font-size: 10.5px; }
+  .diagram svg .tm  { fill: var(--teal);   font-size: 11px;   font-family: var(--mono); }
+  .diagram svg .ta  { fill: var(--accent); font-size: 11px;   font-weight: 600; }
+  .diagram svg .tg  { fill: var(--green);  font-size: 11px;   font-weight: 600; }
+  .diagram svg .tc  { fill: var(--coral);  font-size: 11px;   font-weight: 600; }
+  .diagram svg .lbl { fill: var(--text3);  font-size: 10px;   font-family: var(--mono); }
+  .diagram svg .box        { fill: var(--bg3); stroke: var(--border2); stroke-width: 1; }
+  .diagram svg .box-accent { fill: rgba(124,158,255,0.10); stroke: var(--accent); stroke-width: 1.2; }
+  .diagram svg .box-teal   { fill: rgba(45,212,191,0.10);  stroke: var(--teal);   stroke-width: 1.2; }
+  .diagram svg .box-amber  { fill: rgba(251,191,36,0.10);  stroke: var(--amber);  stroke-width: 1.2; }
+  .diagram svg .box-coral  { fill: rgba(248,113,113,0.10); stroke: var(--coral);  stroke-width: 1.2; }
+  .diagram svg .box-purple { fill: rgba(167,139,250,0.10); stroke: var(--purple); stroke-width: 1.2; }
+  .diagram svg .box-green  { fill: rgba(74,222,128,0.10);  stroke: var(--green);  stroke-width: 1.2; }
+  .diagram svg .edge        { stroke: var(--text3); stroke-width: 1.6; fill: none; }
+  .diagram svg .edge-accent { stroke: var(--accent); stroke-width: 1.6; fill: none; }
+  .diagram svg .edge-teal   { stroke: var(--teal);   stroke-width: 1.6; fill: none; }
+  .diagram svg .edge-green  { stroke: var(--green);  stroke-width: 2;   fill: none; }
+  .diagram svg .edge-coral  { stroke: var(--coral);  stroke-width: 1.6; fill: none; }
+  .diagram svg .dash { stroke-dasharray: 5 4; }
+  .diagram svg .dot-n { fill: var(--bg4); stroke: var(--border2); stroke-width: 1; }
+  .diagram svg .center { text-anchor: middle; }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
+
+  /* ── Footer ── */
+  footer {
+    margin-left: 260px;
+    max-width: 860px;
+    padding: 1.5rem 3rem 2.5rem;
+    border-top: 1px solid var(--border);
+    font-size: 12.5px;
+    color: var(--text3);
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+
+  @media (max-width: 900px) {
+    nav { width: 220px; }
+    main { margin-left: 220px; padding: 2rem 1.5rem 4rem; }
+    footer { margin-left: 220px; padding: 1.5rem; }
+    .grid-2, .compare, .algo-grid { grid-template-columns: 1fr; }
+    .dr-grid { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    nav { display: none; }
+    main { margin-left: 0; padding: 1.5rem; }
+    footer { margin-left: 0; }
+    .dr-grid { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- ── Sidebar ── -->
+<nav>
+  <div class="nav-brand">
+    <div class="label">System Design</div>
+    <h1>Networking Fundamentals</h1>
+  </div>
+  <div class="nav-section-label">Core Concepts</div>
+  <ul>
+    <li><a href="#ip"><span class="dot"></span>IP Addresses</a></li>
+    <li><a href="#dns"><span class="dot"></span>DNS</a></li>
+    <li><a href="#dns-cache"><span class="dot"></span>DNS Caching</a></li>
+    <li><a href="#dns-providers"><span class="dot"></span>DNS Providers & Resolvers</a></li>
+    <li><a href="#dns-registration"><span class="dot"></span>Domain Registration</a></li>
+  </ul>
+  <div class="nav-section-label">Proxies & Routing</div>
+  <ul>
+    <li><a href="#proxy"><span class="dot"></span>Proxy vs Reverse Proxy</a></li>
+    <li><a href="#lb"><span class="dot"></span>Load Balancer</a></li>
+    <li><a href="#lb-algorithms"><span class="dot"></span>LB Algorithms</a></li>
+    <li><a href="#api-gateway"><span class="dot"></span>API Gateway</a></li>
+    <li><a href="#dns-lb"><span class="dot"></span>DNS LB vs Traditional LB</a></li>
+  </ul>
+  <div class="nav-section-label">Protocols</div>
+  <ul>
+    <li><a href="#http"><span class="dot"></span>HTTP / HTTPS</a></li>
+    <li><a href="#http-versions"><span class="dot"></span>HTTP/1 vs HTTP/2 vs HTTP/3</a></li>
+  </ul>
+  <div class="nav-section-label">Resilience</div>
+  <ul>
+    <li><a href="#failure"><span class="dot"></span>Failure Scenarios</a></li>
+    <li><a href="#dr"><span class="dot"></span>Disaster Recovery</a></li>
+    <li><a href="#incidents"><span class="dot"></span>Real-world Incidents</a></li>
+  </ul>
+  <div class="nav-section-label">Reference</div>
+  <ul>
+    <li><a href="#cheatsheet"><span class="dot"></span>Strategy Cheat Sheet</a></li>
+  </ul>
+</nav>
+
+<!-- ── Main Content ── -->
+<main>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="eyebrow">Study Reference · System Design</div>
+    <h2>Networking <em>Fundamentals</em></h2>
+    <p>A complete revision guide covering how the internet works end-to-end — from IP addresses and DNS to load balancers, API gateways, HTTP protocols, and global fault tolerance. Based on architect-level discussion.</p>
+    <div class="topic-pills">
+      <span class="pill">IP Addresses</span>
+      <span class="pill">DNS Resolution</span>
+      <span class="pill">Forward & Reverse Proxy</span>
+      <span class="pill">Load Balancing</span>
+      <span class="pill">API Gateway</span>
+      <span class="pill">HTTP/1 · HTTP/2 · HTTP/3</span>
+      <span class="pill">Disaster Recovery</span>
+      <span class="pill">DNS Caching</span>
+      <span class="pill">Visual Diagrams</span>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 1: IP Addresses ══ -->
+  <section class="section" id="ip">
+    <div class="section-header">
+      <span class="section-number">01</span>
+      <h2>IP Addresses</h2>
+      <span class="tag tag-foundation">Foundation</span>
+    </div>
+
+    <p>An IP address is the internet's postal system. Every device needs one for data (packets) to be delivered correctly. Think of it as a home address — without it, nobody knows where to send your mail.</p>
+
+    <h3>Private vs Public IP</h3>
+    <div class="compare">
+      <div class="compare-side">
+        <h4 style="color:var(--accent)">Private IP</h4>
+        <ul>
+          <li>Internal to your home/office network</li>
+          <li>Ranges: <code>192.168.x.x</code>, <code>10.x.x.x</code></li>
+          <li>Assigned by your router via DHCP</li>
+          <li>Not reachable from the internet</li>
+          <li>Multiple devices share one public IP</li>
+        </ul>
+      </div>
+      <div class="compare-side">
+        <h4 style="color:var(--teal)">Public IP</h4>
+        <ul>
+          <li>Globally unique, visible on the internet</li>
+          <li>Assigned by your ISP or cloud provider</li>
+          <li>Your router's outward-facing address</li>
+          <li>What servers use to reach you</li>
+          <li>Servers use static (fixed) public IPs</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>NAT — Network Address Translation</h3>
+    <p>Your router uses NAT to allow multiple devices (laptop, phone, TV) to share a single public IP. It tracks which device made which request and routes the response back correctly. The internet only sees your router's public IP — never your device's private IP.</p>
+
+    <div class="flow">
+      <div class="flow-step">Laptop <code>192.168.1.10</code></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">Router / NAT <code>203.0.113.5</code></div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">Internet</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">Google Server <code>142.250.80.46</code></div>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 240" role="img" aria-label="NAT diagram: three private devices share one public IP through a router">
+        <defs>
+          <marker id="m-nat" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+        </defs>
+        <!-- devices -->
+        <rect class="box box-accent" x="12" y="18" width="128" height="54" rx="8"/>
+        <text class="t center" x="76" y="42">Laptop</text>
+        <text class="lbl center" x="76" y="60">192.168.1.10</text>
+        <rect class="box box-accent" x="12" y="93" width="128" height="54" rx="8"/>
+        <text class="t center" x="76" y="117">Phone</text>
+        <text class="lbl center" x="76" y="135">192.168.1.11</text>
+        <rect class="box box-accent" x="12" y="168" width="128" height="54" rx="8"/>
+        <text class="t center" x="76" y="192">TV</text>
+        <text class="lbl center" x="76" y="210">192.168.1.12</text>
+        <!-- device -> router -->
+        <path class="edge edge-accent" d="M140,45 C195,55 200,95 243,108" marker-end="url(#m-nat)"/>
+        <path class="edge edge-accent" d="M140,120 L243,120" marker-end="url(#m-nat)"/>
+        <path class="edge edge-accent" d="M140,195 C195,185 200,145 243,132" marker-end="url(#m-nat)"/>
+        <!-- router -->
+        <rect class="box box-teal" x="247" y="78" width="170" height="84" rx="10"/>
+        <text class="t center" x="332" y="104">Router / NAT</text>
+        <text class="tm center" x="332" y="124">public 203.0.113.5</text>
+        <text class="t3 center" x="332" y="142">private 192.168.1.1</text>
+        <text class="lbl center" x="332" y="176">one shared public IP</text>
+        <!-- router -> internet -->
+        <path class="edge" d="M417,120 L470,120" marker-end="url(#m-nat)"/>
+        <!-- internet -->
+        <ellipse class="box" cx="528" cy="120" rx="56" ry="42"/>
+        <text class="t2 center" x="528" y="124">Internet</text>
+        <!-- internet -> server -->
+        <path class="edge" d="M584,120 L600,120" marker-end="url(#m-nat)"/>
+        <!-- server -->
+        <rect class="box box-coral" x="600" y="88" width="108" height="64" rx="8"/>
+        <text class="t center" x="654" y="113">Google</text>
+        <text class="lbl center" x="654" y="133">142.250.80.46</text>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>NAT lets many private devices share a single public IP. The internet only ever sees <code>203.0.113.5</code> — the router maps each response back to the device that asked.</figcaption>
+    </figure>
+
+    <h3>IPv4 vs IPv6</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>IPv4</th><th>IPv6</th></tr></thead>
+        <tbody>
+          <tr><td>Format</td><td><code>203.0.113.5</code></td><td><code>2001:db8::1</code></td></tr>
+          <tr><td>Bits</td><td>32-bit</td><td>128-bit</td></tr>
+          <tr><td>Total addresses</td><td>~4 billion (exhausted)</td><td>340 undecillion</td></tr>
+          <tr><td>Status</td><td>Still dominant, being phased out</td><td>Growing adoption</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-label">System Design Insight</div>
+      <p>Servers you deploy on AWS/GCP get a <strong>public IP</strong>. Your application must listen on that IP and a port (e.g. <code>0.0.0.0:8080</code>) to receive traffic. Use <strong>Elastic IPs</strong> (AWS) or <strong>Reserved IPs</strong> (GCP) for production — they don't change even if you replace the underlying instance.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 2: DNS ══ -->
+  <section class="section" id="dns">
+    <div class="section-header">
+      <span class="section-number">02</span>
+      <h2>DNS — Domain Name System</h2>
+      <span class="tag tag-foundation">Foundation</span>
+    </div>
+
+    <p>DNS translates human-readable names like <code>google.com</code> into IP addresses machines understand. Without DNS you'd memorise <code>142.250.80.46</code> instead of typing <code>google.com</code>. It is the internet's phone book.</p>
+
+    <h3>The DNS Resolution Journey</h3>
+    <p>When you type <code>google.com</code>, a chain of lookups happens before your browser can connect. Each layer is checked in order — the full journey only happens on a complete cache miss.</p>
+
+    <div class="flow" style="flex-direction:column; align-items:flex-start; gap:0;">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+        <span class="badge badge-blue">1</span>
+        <div><strong>Browser DNS cache</strong> — checked first. Returns instantly if found.</div>
+      </div>
+      <div style="padding-left:28px;color:var(--text3);font-size:12px;">↓ miss</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+        <span class="badge badge-blue">2</span>
+        <div><strong>OS cache + hosts file</strong> — <code>/etc/hosts</code> overrides take precedence here.</div>
+      </div>
+      <div style="padding-left:28px;color:var(--text3);font-size:12px;">↓ miss</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+        <span class="badge badge-teal">3</span>
+        <div><strong>Recursive resolver</strong> — your ISP, or <code>8.8.8.8</code> (Google) / <code>1.1.1.1</code> (Cloudflare). Does the full legwork.</div>
+      </div>
+      <div style="padding-left:28px;color:var(--text3);font-size:12px;">↓ asks root</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+        <span class="badge badge-purple">4</span>
+        <div><strong>Root nameserver</strong> — 13 clusters (A–M), 1,800+ physical servers via anycast. Knows who manages <code>.com</code>.</div>
+      </div>
+      <div style="padding-left:28px;color:var(--text3);font-size:12px;">↓ asks TLD</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+        <span class="badge badge-purple">5</span>
+        <div><strong>TLD nameserver</strong> — manages <code>.com</code>, <code>.org</code>, <code>.in</code>. Knows which nameserver holds <code>google.com</code>.</div>
+      </div>
+      <div style="padding-left:28px;color:var(--text3);font-size:12px;">↓ asks authoritative</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 0;">
+        <span class="badge badge-coral">6</span>
+        <div><strong>Authoritative nameserver</strong> — Google's own DNS. Returns the final IP: <code>142.250.80.46</code>. Answer is cached by all layers.</div>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 200" role="img" aria-label="DNS resolution walk from browser through resolver, root, TLD and authoritative nameservers">
+        <defs>
+          <marker id="m-dns" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+          <marker id="m-dns-teal" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#2dd4bf"/>
+          </marker>
+        </defs>
+        <!-- numbered steps -->
+        <circle class="dot-n" cx="144" cy="24" r="10"/><text class="t2 center" x="144" y="28">1</text>
+        <circle class="dot-n" cx="290" cy="24" r="10"/><text class="t2 center" x="290" y="28">2</text>
+        <circle class="dot-n" cx="436" cy="24" r="10"/><text class="t2 center" x="436" y="28">3</text>
+        <circle class="dot-n" cx="582" cy="24" r="10"/><text class="t2 center" x="582" y="28">4</text>
+        <!-- boxes -->
+        <rect class="box box-accent" x="8" y="40" width="126" height="64" rx="8"/>
+        <text class="t center" x="71" y="68">Browser</text>
+        <text class="t3 center" x="71" y="86">+ OS cache</text>
+        <rect class="box box-teal" x="154" y="40" width="126" height="64" rx="8"/>
+        <text class="t center" x="217" y="68">Resolver</text>
+        <text class="tm center" x="217" y="86">8.8.8.8</text>
+        <rect class="box box-purple" x="300" y="40" width="126" height="64" rx="8"/>
+        <text class="t center" x="363" y="68">Root NS</text>
+        <text class="t3 center" x="363" y="86">→ .com</text>
+        <rect class="box box-purple" x="446" y="40" width="126" height="64" rx="8"/>
+        <text class="t center" x="509" y="68">TLD · .com</text>
+        <text class="t3 center" x="509" y="86">→ google</text>
+        <rect class="box box-coral" x="592" y="40" width="120" height="64" rx="8"/>
+        <text class="t center" x="652" y="68">Auth NS</text>
+        <text class="lbl center" x="652" y="86">142.250.80.46</text>
+        <!-- forward arrows -->
+        <path class="edge" d="M134,72 L154,72" marker-end="url(#m-dns)"/>
+        <path class="edge" d="M280,72 L300,72" marker-end="url(#m-dns)"/>
+        <path class="edge" d="M426,72 L446,72" marker-end="url(#m-dns)"/>
+        <path class="edge" d="M572,72 L592,72" marker-end="url(#m-dns)"/>
+        <!-- return answer -->
+        <path class="edge-teal dash" d="M652,104 L652,150 L71,150 L71,106" marker-end="url(#m-dns-teal)"/>
+        <text class="tm center" x="361" y="146">answer 142.250.80.46 — cached at every layer on the way back</text>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>On a full cache miss the resolver walks the hierarchy left to right, then the IP travels back (dashed) and is cached at every layer — so the next lookup is instant.</figcaption>
+    </figure>
+
+    <h3>Common DNS Record Types</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Record</th><th>Maps</th><th>Use case</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td>Domain → IPv4</td><td>Point <code>mysite.com</code> to <code>1.2.3.4</code></td></tr>
+          <tr><td>AAAA</td><td>Domain → IPv6</td><td>Same as A but for IPv6</td></tr>
+          <tr><td>CNAME</td><td>Alias → domain</td><td>Point <code>www</code> to <code>mysite.com</code>, or domain to ALB DNS name</td></tr>
+          <tr><td>MX</td><td>Domain → mail server</td><td>Email routing for your domain</td></tr>
+          <tr><td>TXT</td><td>Domain → text string</td><td>SSL verification, email authentication (SPF/DKIM)</td></tr>
+          <tr><td>NS</td><td>Domain → nameserver</td><td>Delegates your domain to a DNS provider</td></tr>
+          <tr><td>TTL</td><td>—</td><td>How long resolvers cache the answer (seconds)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-label">TTL Migration Strategy</div>
+      <p><strong>Before</strong> a server migration: lower TTL to 60 seconds and wait for current TTL to expire. <strong>During</strong>: update the A record. Users pick up the change within 60 seconds. <strong>After</strong> migration is stable: raise TTL back to 3600–86400 for performance.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 3: DNS Caching ══ -->
+  <section class="section" id="dns-cache">
+    <div class="section-header">
+      <span class="section-number">03</span>
+      <h2>DNS Caching</h2>
+      <span class="tag tag-foundation">Foundation</span>
+    </div>
+
+    <p>DNS results are cached at four separate layers. The full DNS resolution chain only runs on a complete miss at all four layers. For returning visitors, DNS is almost always served from cache.</p>
+
+    <div class="layer-stack">
+      <div class="layer layer-1">
+        <div class="layer-label">Browser cache</div>
+        <div class="layer-desc">Checked first. Lives in memory — gone when you close the browser. Chrome caps max TTL at ~60s regardless of the DNS record.</div>
+        <div class="layer-tool">TTL: 1s – 60s</div>
+      </div>
+      <div class="layer layer-2">
+        <div class="layer-label">OS cache</div>
+        <div class="layer-desc">Survives browser restart. <code>/etc/hosts</code> file here can override any DNS record. Respects DNS TTL.</div>
+        <div class="layer-tool">TTL: respects DNS</div>
+      </div>
+      <div class="layer layer-3">
+        <div class="layer-label">Router cache</div>
+        <div class="layer-desc">Shared across all devices on your network. Runs dnsmasq on most consumer routers. Lives in RAM — cleared on reboot.</div>
+        <div class="layer-tool">TTL: minutes</div>
+      </div>
+      <div class="layer layer-4">
+        <div class="layer-label">ISP recursive resolver</div>
+        <div class="layer-desc">Shared across thousands of ISP customers. Very high hit rate on popular domains. TTL set by the domain owner.</div>
+        <div class="layer-tool">TTL: set by domain owner</div>
+      </div>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 760 196" role="img" aria-label="DNS cache cascade across browser, OS, router and ISP resolver">
+        <defs>
+          <marker id="m-cache" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+          <marker id="m-cache-green" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#4ade80"/>
+          </marker>
+          <marker id="m-cache-coral" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#f87171"/>
+          </marker>
+        </defs>
+        <!-- entry -->
+        <text class="lbl center" x="82" y="22">DNS lookup</text>
+        <path class="edge" d="M82,26 L82,40" marker-end="url(#m-cache)"/>
+        <!-- cache boxes -->
+        <rect class="box box-accent" x="8" y="40" width="148" height="56" rx="8"/>
+        <text class="t center" x="82" y="68">Browser</text>
+        <text class="t3 center" x="82" y="85">1–60s</text>
+        <rect class="box box-teal" x="168" y="40" width="148" height="56" rx="8"/>
+        <text class="t center" x="242" y="68">OS / hosts</text>
+        <text class="t3 center" x="242" y="85">respects TTL</text>
+        <rect class="box box-amber" x="328" y="40" width="148" height="56" rx="8"/>
+        <text class="t center" x="402" y="68">Router</text>
+        <text class="t3 center" x="402" y="85">dnsmasq · RAM</text>
+        <rect class="box box-coral" x="488" y="40" width="148" height="56" rx="8"/>
+        <text class="t center" x="562" y="68">ISP resolver</text>
+        <text class="t3 center" x="562" y="85">high hit rate</text>
+        <!-- miss arrows between -->
+        <text class="lbl center" x="162" y="60">miss</text>
+        <path class="edge" d="M156,68 L168,68" marker-end="url(#m-cache)"/>
+        <text class="lbl center" x="322" y="60">miss</text>
+        <path class="edge" d="M316,68 L328,68" marker-end="url(#m-cache)"/>
+        <text class="lbl center" x="482" y="60">miss</text>
+        <path class="edge" d="M476,68 L488,68" marker-end="url(#m-cache)"/>
+        <!-- final miss -> walk -->
+        <text class="t3 center" x="690" y="60" style="fill:var(--coral)">all miss</text>
+        <path class="edge-coral" d="M636,68 L716,68" marker-end="url(#m-cache-coral)"/>
+        <text class="lbl center" x="688" y="86" style="fill:var(--coral)">full walk</text>
+        <!-- hit -> return -->
+        <path class="edge-green" d="M82,96 L82,148" marker-end="url(#m-cache-green)"/>
+        <path class="edge-green" d="M242,96 L242,148" marker-end="url(#m-cache-green)"/>
+        <path class="edge-green" d="M402,96 L402,148" marker-end="url(#m-cache-green)"/>
+        <path class="edge-green" d="M562,96 L562,148" marker-end="url(#m-cache-green)"/>
+        <rect class="box box-green" x="8" y="150" width="628" height="34" rx="8"/>
+        <text class="tg center" x="322" y="172">✓ HIT at any layer → return cached IP instantly</text>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>Each layer is checked in order. A hit at any layer returns the IP immediately; only a miss at all four triggers the full DNS walk from the previous diagram.</figcaption>
+    </figure>
+
+    <h3>Browser TTL Behaviour by Browser</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Browser</th><th>Max cached TTL</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>Chrome</td><td>~60 seconds</td><td>Inspect at <code>chrome://net-internals/#dns</code></td></tr>
+          <tr><td>Firefox</td><td>60 seconds</td><td>Configurable via <code>about:config</code> → <code>network.dnsCacheExpiration</code></td></tr>
+          <tr><td>Safari</td><td>~10 minutes</td><td>Caps higher than Chrome/Firefox</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>How to Flush DNS</h3>
+    <pre><code><span class="comment"># macOS</span>
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+
+<span class="comment"># Windows</span>
+ipconfig /flushdns
+
+<span class="comment"># Linux (systemd)</span>
+sudo systemd-resolve --flush-caches
+
+<span class="comment"># Router (dnsmasq)</span>
+killall -HUP dnsmasq
+
+<span class="comment"># Chrome</span>
+<span class="highlight">chrome://net-internals/#dns</span>  → Clear host cache</code></pre>
+
+    <div class="callout callout-warn">
+      <div class="callout-label">Debugging Tip</div>
+      <p>When testing a DNS migration from home, all your devices share the same router cache. Flushing just your laptop's OS cache won't help if the router still has the old IP cached. Always flush or reboot the router too, or test from a mobile network.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 4: DNS Providers & Resolvers ══ -->
+  <section class="section" id="dns-providers">
+    <div class="section-header">
+      <span class="section-number">04</span>
+      <h2>DNS Providers & Resolvers</h2>
+      <span class="tag tag-infra">Infrastructure</span>
+    </div>
+
+    <h3>DNS Authority Hierarchy</h3>
+    <p>The internet's DNS system is a strict hierarchy. <strong>ICANN</strong> governs the root, delegates authority to TLD registries, who delegate to authoritative nameservers that you control.</p>
+
+    <div class="layer-stack">
+      <div class="layer layer-1">
+        <div class="layer-label">ICANN</div>
+        <div class="layer-desc">Governs the entire DNS system. Delegates TLD management to registries (Verisign, PIR, Google, Amazon).</div>
+        <div class="layer-tool">1 authority</div>
+      </div>
+      <div class="layer layer-2">
+        <div class="layer-label">Root nameservers</div>
+        <div class="layer-desc">13 identities (A–M), operated by 12 organisations including Verisign, NASA, ICANN, Cogent. <strong>1,800+ physical machines</strong> worldwide via anycast.</div>
+        <div class="layer-tool">1,800+ servers</div>
+      </div>
+      <div class="layer layer-3">
+        <div class="layer-label">TLD nameservers</div>
+        <div class="layer-desc">~1,500 TLDs. Verisign manages <code>.com</code> and <code>.net</code>. PIR manages <code>.org</code>. NIXI manages <code>.in</code>. Each TLD has multiple redundant servers.</div>
+        <div class="layer-tool">~1,500 TLDs</div>
+      </div>
+      <div class="layer layer-4">
+        <div class="layer-label">Authoritative nameservers</div>
+        <div class="layer-desc">Your DNS provider. Holds your actual A/CNAME/MX records. Cloudflare, Route53, GoDaddy, Namecheap, Google Cloud DNS. You choose this when registering a domain.</div>
+        <div class="layer-tool">You control this</div>
+      </div>
+    </div>
+
+    <h3>Choosing a Recursive Resolver</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Provider</th><th>IP</th><th>Speed</th><th>Privacy</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>ISP default</td><td>Auto-assigned</td><td>Variable</td><td>Low — may log and sell</td><td>May inject ads on NXDOMAIN</td></tr>
+          <tr><td>Google</td><td><code>8.8.8.8</code> / <code>8.8.4.4</code></td><td>Very fast</td><td>Logs, anonymises in 24–48h</td><td>Most widely used alternative</td></tr>
+          <tr><td>Cloudflare</td><td><code>1.1.1.1</code> / <code>1.0.0.1</code></td><td>Fastest</td><td>Best — third-party audited</td><td>Recommended for privacy</td></tr>
+          <tr><td>Pi-hole</td><td>Self-hosted</td><td>LAN-fast</td><td>Full control</td><td>Blocks ads network-wide at DNS level</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Anycast — How the Closest Server Answers You</h3>
+    <p>Cloudflare, Google, and all root/TLD servers use <strong>anycast routing</strong>. The same IP address (e.g. <code>1.1.1.1</code>) is announced from 300+ physical locations simultaneously. Internet routers automatically send your query to the nearest physical machine. You never choose — the network chooses based on routing distance.</p>
+    <p>This means when you're in Chennai querying <code>1.1.1.1</code>, you're hitting a server in Mumbai or Singapore — not the US. That's why DNS feels instantaneous despite global infrastructure.</p>
+
+    <div class="callout callout-info">
+      <div class="callout-label">Scale Reference</div>
+      <p>Cloudflare: 300+ anycast locations · Google: 200+ locations · AWS Route53: 100+ edge locations. The <code>.com</code> TLD alone runs 13 nameservers labeled <code>a.gtld-servers.net</code> through <code>m.gtld-servers.net</code>.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 5: Domain Registration ══ -->
+  <section class="section" id="dns-registration">
+    <div class="section-header">
+      <span class="section-number">05</span>
+      <h2>Domain Registration & DNS Setup</h2>
+      <span class="tag tag-infra">Infrastructure</span>
+    </div>
+
+    <p>There are two distinct roles that are often confused: the <strong>registrar</strong> (where you buy the domain) and the <strong>DNS provider</strong> (where you manage records). They can be the same company or different ones.</p>
+
+    <h3>Step-by-Step: Getting Your Domain Resolving</h3>
+    <div style="display:flex;flex-direction:column;gap:10px;margin:1rem 0;">
+      <div class="card">
+        <div class="card-title"><span class="badge badge-blue">Step 1</span> Buy the domain from a registrar</div>
+        <p>GoDaddy, Namecheap, Google Domains, Porkbun. The registrar notifies the TLD registry (e.g. Verisign for <code>.com</code>) that you own this domain. Your domain is now in the global registry.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="badge badge-teal">Step 2</span> Point nameservers to your DNS provider</div>
+        <p>In your registrar's panel, set the NS records to your DNS provider. E.g. <code>ns1.cloudflare.com</code>, <code>ns2.cloudflare.com</code>. This tells the TLD registry which server holds your records.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="badge badge-amber">Step 3</span> Create DNS records in your DNS provider</div>
+        <p>Add an <strong>A record</strong>: <code>mysite.com → 54.1.2.3</code> (your load balancer IP). Add CNAME, MX, TXT records as needed. On AWS, use an <strong>Alias record</strong> pointing to the ALB DNS name.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="badge badge-purple">Step 4</span> Wait for propagation</div>
+        <p>DNS changes propagate based on TTL. With a TTL of 3600, it can take up to an hour for the world to see your new record. Lower TTL before changes, raise it after.</p>
+      </div>
+    </div>
+
+    <h3>DNS IP — Which IP Goes in the A Record?</h3>
+    <p><strong>Always point DNS to the load balancer IP — never to individual service instances.</strong> Service instances are ephemeral — they scale up and down, restart, and get replaced. Their IPs change constantly. The load balancer has a stable, permanent IP that never changes.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>What IP you configure</th><th>Changes?</th></tr></thead>
+        <tbody>
+          <tr><td>DNS A record</td><td>Load balancer IP or DNS name</td><td>Almost never</td></tr>
+          <tr><td>LB target group</td><td>Private IPs of service instances</td><td>Constantly — auto-scaling</td></tr>
+          <tr><td>Service instance</td><td>Assigned by cloud, ephemeral</td><td>Every time it restarts</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-label">AWS Specifics</div>
+      <p>AWS ALBs get a DNS name like <code>myapp-123456.ap-south-1.elb.amazonaws.com</code>, not a raw IP. Your Route53 A record uses an <strong>Alias record</strong> pointing to this DNS name. AWS manages the underlying IPs internally. This is the standard pattern on AWS.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 6: Proxy vs Reverse Proxy ══ -->
+  <section class="section" id="proxy">
+    <div class="section-header">
+      <span class="section-number">06</span>
+      <h2>Proxy vs Reverse Proxy</h2>
+      <span class="tag tag-infra">Infrastructure</span>
+    </div>
+
+    <p>The key difference in one sentence: a <strong>forward proxy hides the client</strong>. A <strong>reverse proxy hides the server</strong>.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 300" role="img" aria-label="Forward proxy hides clients; reverse proxy hides servers">
+        <defs>
+          <marker id="m-px" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+        </defs>
+        <!-- FORWARD -->
+        <text class="ta" x="12" y="22">FORWARD PROXY — hides the CLIENT</text>
+        <rect class="box box-accent" x="12" y="44" width="130" height="60" rx="8"/>
+        <text class="t center" x="77" y="72">Clients</text>
+        <text class="t3 center" x="77" y="90">A · B · C</text>
+        <rect class="box box-amber" x="270" y="44" width="150" height="60" rx="8"/>
+        <text class="t center" x="345" y="72">Forward Proxy</text>
+        <text class="t3 center" x="345" y="90">VPN · filter</text>
+        <rect class="box" x="548" y="44" width="160" height="60" rx="8"/>
+        <text class="t center" x="628" y="72">Websites</text>
+        <text class="t3 center" x="628" y="90">see proxy IP</text>
+        <path class="edge-accent" d="M142,74 L270,74" marker-end="url(#m-px)"/>
+        <path class="edge-accent" d="M420,74 L548,74" marker-end="url(#m-px)"/>
+        <text class="t3 center" x="360" y="128">the server sees the proxy's IP, never the real client</text>
+        <!-- divider -->
+        <line x1="12" y1="152" x2="708" y2="152" stroke="rgba(255,255,255,0.08)"/>
+        <!-- REVERSE -->
+        <text x="12" y="184" style="fill:var(--teal);font-weight:600;font-size:11px">REVERSE PROXY — hides the SERVER</text>
+        <rect class="box box-accent" x="12" y="206" width="130" height="60" rx="8"/>
+        <text class="t center" x="77" y="234">Client</text>
+        <text class="t3 center" x="77" y="252">one request</text>
+        <rect class="box box-teal" x="270" y="206" width="150" height="60" rx="8"/>
+        <text class="t center" x="345" y="234">Reverse Proxy</text>
+        <text class="t3 center" x="345" y="252">LB · SSL · cache</text>
+        <rect class="box" x="548" y="176" width="160" height="32" rx="6"/>
+        <text class="t2 center" x="628" y="196">Server 1</text>
+        <rect class="box" x="548" y="220" width="160" height="32" rx="6"/>
+        <text class="t2 center" x="628" y="240">Server 2</text>
+        <rect class="box" x="548" y="264" width="160" height="32" rx="6"/>
+        <text class="t2 center" x="628" y="284">Server 3</text>
+        <path class="edge-teal" d="M142,236 L270,236" marker-end="url(#m-px)"/>
+        <path class="edge-teal" d="M420,236 C480,236 490,192 548,192" marker-end="url(#m-px)"/>
+        <path class="edge-teal" d="M420,236 L548,236" marker-end="url(#m-px)"/>
+        <path class="edge-teal" d="M420,236 C480,236 490,280 548,280" marker-end="url(#m-px)"/>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>A <strong>forward proxy</strong> sits in front of clients (privacy, filtering). A <strong>reverse proxy</strong> sits in front of servers — the client sees one IP while load balancing, SSL and caching happen behind it.</figcaption>
+    </figure>
+
+    <div class="compare">
+      <div class="compare-side">
+        <h4 style="color:var(--accent)">Forward proxy (client-side)</h4>
+        <p style="font-size:13px;margin-bottom:8px;">Server sees the proxy's IP, not your real IP.</p>
+        <ul>
+          <li>Anonymity and privacy (VPN-like)</li>
+          <li>Bypass geo-restrictions</li>
+          <li>Corporate content filtering (block social media)</li>
+          <li>ISP-level caching of shared resources</li>
+        </ul>
+      </div>
+      <div class="compare-side">
+        <h4 style="color:var(--teal)">Reverse proxy (server-side)</h4>
+        <p style="font-size:13px;margin-bottom:8px;">Client sees one IP; behind it can be 5,000 servers.</p>
+        <ul>
+          <li>Load balancing across backend servers</li>
+          <li>SSL/TLS termination (HTTPS → HTTP internally)</li>
+          <li>DDoS protection and rate limiting</li>
+          <li>Response caching (serve cached HTML/images)</li>
+          <li>Request compression</li>
+          <li>Path-based routing (<code>/api</code> → service A, <code>/static</code> → CDN)</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>When to Use Which</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Scenario</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td>Corporate office blocking social media</td><td>Forward proxy</td></tr>
+          <tr><td>Anonymous browsing / privacy</td><td>Forward proxy (VPN)</td></tr>
+          <tr><td>Deploy multiple backend servers behind one domain</td><td>Reverse proxy</td></tr>
+          <tr><td>Manage SSL certificates in one place only</td><td>Reverse proxy</td></tr>
+          <tr><td>Protect servers from DDoS</td><td>Reverse proxy</td></tr>
+          <tr><td>Cache API responses at the edge</td><td>Reverse proxy / CDN</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-success">
+      <div class="callout-label">Real World</div>
+      <p>When you open Netflix, you're hitting a reverse proxy (Cloudflare or AWS CloudFront). You have no idea whether 5 or 5,000 servers are behind it — and that's exactly the point. Engineers can add or remove servers without you ever noticing.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 7: Load Balancer ══ -->
+  <section class="section" id="lb">
+    <div class="section-header">
+      <span class="section-number">07</span>
+      <h2>Load Balancer</h2>
+      <span class="tag tag-infra">Infrastructure</span>
+    </div>
+
+    <p>A load balancer distributes incoming traffic across multiple backend instances. Its superpower over DNS load balancing is <strong>active health checks</strong> — it probes every backend every 5–30 seconds, and instantly removes unhealthy instances from the pool without any DNS propagation delay.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 248" role="img" aria-label="Load balancer distributing traffic to healthy instances and removing an unhealthy one">
+        <defs>
+          <marker id="m-lb" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+          <marker id="m-lb-green" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#4ade80"/>
+          </marker>
+          <marker id="m-lb-coral" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#f87171"/>
+          </marker>
+        </defs>
+        <!-- users -->
+        <rect class="box box-accent" x="12" y="92" width="120" height="60" rx="8"/>
+        <text class="t center" x="72" y="120">Users</text>
+        <text class="t3 center" x="72" y="138">traffic</text>
+        <path class="edge" d="M132,122 L240,122" marker-end="url(#m-lb)"/>
+        <!-- LB -->
+        <rect class="box box-teal" x="240" y="84" width="172" height="76" rx="10"/>
+        <text class="t center" x="326" y="114">Load Balancer</text>
+        <text class="t3 center" x="326" y="134">health checks · 5–30s</text>
+        <!-- instances -->
+        <rect class="box box-green" x="560" y="20" width="148" height="56" rx="8"/>
+        <text class="t center" x="634" y="44">Instance 1</text>
+        <text class="tg center" x="634" y="62">✓ healthy</text>
+        <rect class="box box-green" x="560" y="96" width="148" height="56" rx="8"/>
+        <text class="t center" x="634" y="120">Instance 2</text>
+        <text class="tg center" x="634" y="138">✓ healthy</text>
+        <rect class="box box-coral dash" x="560" y="172" width="148" height="56" rx="8"/>
+        <text class="t center" x="634" y="196">Instance 3</text>
+        <text class="tc center" x="634" y="214">✗ removed</text>
+        <!-- LB -> instances -->
+        <path class="edge-green" d="M412,110 C490,82 500,52 560,48" marker-end="url(#m-lb-green)"/>
+        <path class="edge-green" d="M412,124 L560,124" marker-end="url(#m-lb-green)"/>
+        <path class="edge-coral dash" d="M412,138 C490,170 500,196 560,200" marker-end="url(#m-lb-coral)"/>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>The LB probes each instance and instantly stops routing to unhealthy ones — no DNS propagation delay. Instances scale up and down freely behind the stable LB address.</figcaption>
+    </figure>
+
+    <h3>Layer 4 vs Layer 7</h3>
+    <div class="compare">
+      <div class="compare-side">
+        <h4 style="color:var(--accent)">Layer 4 — Transport level</h4>
+        <ul>
+          <li>Routes by IP address + port only</li>
+          <li>Cannot see HTTP headers or URL path</li>
+          <li>Very fast — minimal processing</li>
+          <li>Good for: raw TCP, non-HTTP traffic</li>
+          <li>Example: AWS NLB, HAProxy (TCP mode)</li>
+        </ul>
+      </div>
+      <div class="compare-side">
+        <h4 style="color:var(--teal)">Layer 7 — Application level</h4>
+        <ul>
+          <li>Reads HTTP headers, URL path, cookies</li>
+          <li>Route <code>/api</code> to service A, <code>/static</code> to CDN</li>
+          <li>SSL termination, WebSocket upgrades</li>
+          <li>Good for: all HTTP/HTTPS microservice traffic</li>
+          <li>Example: AWS ALB, Nginx, Cloudflare, Traefik</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>The Full Request Stack</h3>
+    <div class="layer-stack">
+      <div class="layer layer-1">
+        <div class="layer-label">DNS (Route53)</div>
+        <div class="layer-desc">Resolves <code>myapp.com</code> to the load balancer IP. Static — never changes. TTL can be high.</div>
+        <div class="layer-tool">One IP, permanent</div>
+      </div>
+      <div class="layer layer-2">
+        <div class="layer-label">Load balancer</div>
+        <div class="layer-desc">Distributes traffic across nodes. Health checks. Stable IP / DNS name. Spans multiple AZs.</div>
+        <div class="layer-tool">AWS ALB · GCP LB</div>
+      </div>
+      <div class="layer layer-3">
+        <div class="layer-label">Reverse proxy / API GW</div>
+        <div class="layer-desc">SSL termination, caching, path routing, auth, rate limiting. Runs on each node or as a dedicated tier.</div>
+        <div class="layer-tool">Nginx · Kong · Envoy</div>
+      </div>
+      <div class="layer layer-4">
+        <div class="layer-label">Service instances</div>
+        <div class="layer-desc">Ephemeral — scale up/down freely. Private IPs only. Register with LB on startup, deregister on shutdown.</div>
+        <div class="layer-tool">EC2 · Containers · Lambda</div>
+      </div>
+    </div>
+
+    <h3>Scale Up / Down — What Actually Happens</h3>
+    <div class="compare">
+      <div class="compare-side good">
+        <h4>Scale UP (traffic spike)</h4>
+        <ul>
+          <li>Auto-scaler launches new instance</li>
+          <li>Instance starts, runs health check</li>
+          <li>Registers itself with the LB</li>
+          <li>LB now routes to it — instant</li>
+          <li>DNS record: unchanged</li>
+        </ul>
+      </div>
+      <div class="compare-side">
+        <h4 style="color:var(--amber)">Scale DOWN (traffic drops)</h4>
+        <ul>
+          <li>Auto-scaler marks instance for removal</li>
+          <li>LB stops sending new requests (draining)</li>
+          <li>Existing connections finish gracefully</li>
+          <li>Instance deregisters, then terminates</li>
+          <li>DNS record: unchanged</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 8: LB Algorithms ══ -->
+  <section class="section" id="lb-algorithms">
+    <div class="section-header">
+      <span class="section-number">08</span>
+      <h2>Load Balancing Algorithms</h2>
+      <span class="tag tag-infra">Infrastructure</span>
+    </div>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 432" role="img" aria-label="How four load balancing algorithms distribute the same requests across three servers">
+        <defs>
+          <marker id="m-algo" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+          <marker id="m-algo-green" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#4ade80"/>
+          </marker>
+          <marker id="m-algo-accent" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#7c9eff"/>
+          </marker>
+          <marker id="m-algo-purple" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#a78bfa"/>
+          </marker>
+        </defs>
+
+        <!-- ROW 1 · Round Robin -->
+        <text class="t" x="8" y="46">Round Robin</text>
+        <text class="t3" x="8" y="63">1→2→3→1 …</text>
+        <rect class="box box-teal" x="300" y="36" width="64" height="40" rx="6"/>
+        <text class="t2 center" x="332" y="60">LB</text>
+        <path class="edge" d="M214,56 L300,56" marker-end="url(#m-algo)"/>
+        <rect class="box" x="470" y="14" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="30">Server 1 · gets 1 · 4 · 7</text>
+        <rect class="box" x="470" y="44" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="60">Server 2 · gets 2 · 5 · 8</text>
+        <rect class="box" x="470" y="74" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="90">Server 3 · gets 3 · 6 · 9</text>
+        <path class="edge" d="M364,48 C410,26 440,26 470,26" marker-end="url(#m-algo)"/>
+        <path class="edge" d="M364,56 L470,56" marker-end="url(#m-algo)"/>
+        <path class="edge" d="M364,64 C410,86 440,86 470,86" marker-end="url(#m-algo)"/>
+
+        <!-- ROW 2 · Weighted Round Robin -->
+        <text class="t" x="8" y="150">Weighted RR</text>
+        <text class="t3" x="8" y="167">by capacity</text>
+        <rect class="box box-teal" x="300" y="140" width="64" height="40" rx="6"/>
+        <text class="t2 center" x="332" y="164">LB</text>
+        <path class="edge" d="M214,160 L300,160" marker-end="url(#m-algo)"/>
+        <rect class="box" x="470" y="118" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="134">Server 1 · w=3 · ●●● 60%</text>
+        <rect class="box" x="470" y="148" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="164">Server 2 · w=1 · ● 20%</text>
+        <rect class="box" x="470" y="178" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="194">Server 3 · w=1 · ● 20%</text>
+        <path class="edge" d="M364,152 C410,130 440,130 470,130" marker-end="url(#m-algo)" style="stroke-width:5;stroke:var(--teal)"/>
+        <path class="edge" d="M364,160 L470,160" marker-end="url(#m-algo)"/>
+        <path class="edge" d="M364,168 C410,190 440,190 470,190" marker-end="url(#m-algo)"/>
+
+        <!-- ROW 3 · Least Connections -->
+        <text class="t" x="8" y="254">Least Conn.</text>
+        <text class="t3" x="8" y="271">fewest active wins</text>
+        <rect class="box box-teal" x="300" y="244" width="64" height="40" rx="6"/>
+        <text class="t2 center" x="332" y="268">LB</text>
+        <path class="edge" d="M214,264 L300,264" marker-end="url(#m-algo)"/>
+        <rect class="box" x="470" y="222" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="238">Server 1 · ▮▮▮ 3 active</text>
+        <rect class="box box-green" x="470" y="252" width="242" height="24" rx="5"/>
+        <text class="tg" x="480" y="268">Server 2 · ▮ 1 active ← new req</text>
+        <rect class="box" x="470" y="282" width="242" height="24" rx="5"/>
+        <text class="t2" x="480" y="298">Server 3 · ▮▮ 2 active</text>
+        <path class="edge" d="M364,256 C410,234 440,234 470,234" marker-end="url(#m-algo)" style="opacity:0.4"/>
+        <path class="edge-green" d="M364,264 L470,264" marker-end="url(#m-algo-green)"/>
+        <path class="edge" d="M364,272 C410,294 440,294 470,294" marker-end="url(#m-algo)" style="opacity:0.4"/>
+
+        <!-- ROW 4 · IP Hash -->
+        <text class="t" x="8" y="358">IP Hash</text>
+        <text class="t3" x="8" y="375">sticky by client IP</text>
+        <rect class="box box-teal" x="300" y="348" width="64" height="40" rx="6"/>
+        <text class="t2 center" x="332" y="368">hash</text>
+        <path class="edge" d="M214,368 L300,368" marker-end="url(#m-algo)"/>
+        <rect class="box" x="470" y="326" width="242" height="24" rx="5"/>
+        <text class="ta" x="480" y="342">Server 1 · Client A ↺ always</text>
+        <rect class="box" x="470" y="356" width="242" height="24" rx="5"/>
+        <text class="t3" x="480" y="372">Server 2 · (no sticky client)</text>
+        <rect class="box" x="470" y="386" width="242" height="24" rx="5"/>
+        <text x="480" y="402" style="fill:var(--purple);font-size:11px;font-weight:600">Server 3 · Client B ↺ always</text>
+        <path class="edge-accent" d="M364,360 C410,338 440,338 470,338" marker-end="url(#m-algo-accent)"/>
+        <path class="edge" d="M364,368 L470,368" marker-end="url(#m-algo)" style="opacity:0.4"/>
+        <path class="edge" d="M364,376 C410,398 440,398 470,398" marker-end="url(#m-algo-purple)" style="stroke:var(--purple)"/>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>The same traffic, four ways to spread it: <strong>Round Robin</strong> rotates evenly, <strong>Weighted</strong> favours bigger servers, <strong>Least Connections</strong> sends the new request to the least-busy node, and <strong>IP Hash</strong> pins each client to a fixed server.</figcaption>
+    </figure>
+
+    <div class="algo-grid">
+      <div class="algo-card">
+        <h4>Round Robin</h4>
+        <div class="algo-how">1 → 2 → 3 → 1 → 2 → 3</div>
+        <p>Requests distributed to each server in sequence equally.</p>
+        <span class="algo-use">Use when: identical server hardware</span>
+        <div class="algo-risk">⚠ Ignores server load — slow server still gets requests</div>
+      </div>
+      <div class="algo-card">
+        <h4>Weighted Round Robin</h4>
+        <div class="algo-how">A(3×) → B(1×) by weight</div>
+        <p>Servers get requests proportional to their assigned weight.</p>
+        <span class="algo-use">Use when: mixed hardware capacity</span>
+        <div class="algo-risk">✓ Also great for canary deploys — send 5% to new version</div>
+      </div>
+      <div class="algo-card">
+        <h4>Least Connections</h4>
+        <div class="algo-how">route → server with fewest open connections</div>
+        <p>Tracks active connections and always routes to the least busy server.</p>
+        <span class="algo-use">Use when: requests vary in processing time</span>
+        <div class="algo-risk">✓ Best for WebSockets, streaming, ML inference APIs</div>
+      </div>
+      <div class="algo-card">
+        <h4>IP Hash (Sticky Sessions)</h4>
+        <div class="algo-how">hash(client IP) → always same server</div>
+        <p>Same client always hits the same backend server.</p>
+        <span class="algo-use">Use when: server stores session state locally</span>
+        <div class="algo-risk">⚠ Avoid this pattern — store sessions in Redis instead</div>
+      </div>
+      <div class="algo-card">
+        <h4>Random with Health Check</h4>
+        <div class="algo-how">random healthy server</div>
+        <p>Pick any healthy server at random. Averages out at scale.</p>
+        <span class="algo-use">Use when: stateless services at large scale</span>
+        <div class="algo-risk">✓ Surprisingly effective — law of large numbers</div>
+      </div>
+      <div class="algo-card">
+        <h4>Least Response Time</h4>
+        <div class="algo-how">route → fastest responding server</div>
+        <p>Combines active connections + response time to pick best server.</p>
+        <span class="algo-use">Use when: latency is the primary concern</span>
+        <div class="algo-risk">✓ Advanced — supported by Nginx Plus, HAProxy</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 9: API Gateway ══ -->
+  <section class="section" id="api-gateway">
+    <div class="section-header">
+      <span class="section-number">09</span>
+      <h2>API Gateway</h2>
+      <span class="tag tag-infra">Infrastructure</span>
+    </div>
+
+    <p>An API Gateway is a <strong>smart reverse proxy with business logic</strong>. It sits between the load balancer and your microservices and handles cross-cutting concerns so every service doesn't have to implement them individually.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 244" role="img" aria-label="API gateway routing client traffic through ALB to four microservices">
+        <defs>
+          <marker id="m-gw" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+        </defs>
+        <!-- client -->
+        <rect class="box box-accent" x="10" y="96" width="104" height="58" rx="8"/>
+        <text class="t center" x="62" y="129">Client</text>
+        <path class="edge" d="M114,125 L160,125" marker-end="url(#m-gw)"/>
+        <!-- ALB -->
+        <rect class="box box-teal" x="160" y="96" width="110" height="58" rx="8"/>
+        <text class="t center" x="215" y="122">ALB</text>
+        <text class="t3 center" x="215" y="140">L7 LB</text>
+        <path class="edge" d="M270,125 L316,125" marker-end="url(#m-gw)"/>
+        <!-- API GW -->
+        <rect class="box box-amber" x="316" y="82" width="160" height="86" rx="10"/>
+        <text class="t center" x="396" y="110">API Gateway</text>
+        <text class="t3 center" x="396" y="130">auth · rate-limit</text>
+        <text class="t3 center" x="396" y="148">route by path</text>
+        <!-- services -->
+        <rect class="box box-purple" x="560" y="8" width="150" height="50" rx="8"/>
+        <text class="t center" x="635" y="32">User svc</text>
+        <text class="lbl center" x="635" y="48">/api/users</text>
+        <rect class="box box-purple" x="560" y="66" width="150" height="50" rx="8"/>
+        <text class="t center" x="635" y="90">Order svc</text>
+        <text class="lbl center" x="635" y="106">/api/orders</text>
+        <rect class="box box-purple" x="560" y="124" width="150" height="50" rx="8"/>
+        <text class="t center" x="635" y="148">Payment svc</text>
+        <text class="lbl center" x="635" y="164">/api/payments</text>
+        <rect class="box box-purple" x="560" y="182" width="150" height="50" rx="8"/>
+        <text class="t center" x="635" y="206">Notify svc</text>
+        <text class="lbl center" x="635" y="222">/api/notify</text>
+        <!-- GW -> services -->
+        <path class="edge" d="M476,112 C520,70 525,40 560,33" marker-end="url(#m-gw)"/>
+        <path class="edge" d="M476,120 C520,100 525,92 560,91" marker-end="url(#m-gw)"/>
+        <path class="edge" d="M476,130 C520,140 525,148 560,149" marker-end="url(#m-gw)"/>
+        <path class="edge" d="M476,138 C520,180 525,200 560,207" marker-end="url(#m-gw)"/>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>The gateway centralises cross-cutting concerns — authentication, rate limiting and path routing — then forwards each request to the right microservice, keeping services focused on business logic.</figcaption>
+    </figure>
+
+    <h3>What an API Gateway Adds vs a Plain Reverse Proxy</h3>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Authentication & authorisation</div>
+        <p>Validates JWT tokens, API keys, OAuth flows before the request reaches your service. Centralised — no auth code in each service.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Rate limiting</div>
+        <p>1,000 requests/min per API key. Protects backends from abuse without any application code.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Request / response transformation</div>
+        <p>Rename headers, reshape JSON body between client and service. Useful for versioning APIs.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Routing by content</div>
+        <p>Send <code>/api/v1</code> to old service, <code>/api/v2</code> to new service. Route by header, path, method.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Observability</div>
+        <p>Log every API call with latency, status code, API key, and payload size. Single place for all API metrics.</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Circuit breaking</div>
+        <p>If a downstream service is slow or failing, stop sending it traffic and return a fallback. Prevents cascading failures.</p>
+      </div>
+    </div>
+
+    <h3>Real-world Production Stack</h3>
+    <pre><code><span class="comment"># The full stack in a typical cloud deployment</span>
+
+<span class="key">User</span>
+  ↓  DNS resolves to LB IP
+<span class="key">AWS ALB</span>          <span class="comment"># distributes across nodes, health checks, SSL termination</span>
+  ↓
+<span class="key">API Gateway</span>      <span class="comment"># Kong / AWS API GW — auth, rate limit, route by path</span>
+  ↓         ↓         ↓         ↓
+<span class="val">User svc  Order svc  Payment svc  Notify svc</span>
+<span class="comment">/api/users  /api/orders  /api/payments  /api/notify</span></code></pre>
+
+    <div class="callout callout-info">
+      <div class="callout-label">Note on collapsing layers</div>
+      <p>These layers often collapse in practice. <strong>Kong</strong> is both a reverse proxy and an API gateway. <strong>Nginx</strong> can be an LB, reverse proxy, and basic API gateway simultaneously. <strong>AWS ALB + API Gateway</strong> is the most common explicit split in cloud deployments. Don't over-engineer — add layers only when you need what they provide.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 10: DNS LB vs Traditional LB ══ -->
+  <section class="section" id="dns-lb">
+    <div class="section-header">
+      <span class="section-number">10</span>
+      <h2>DNS Load Balancing vs Traditional Load Balancing</h2>
+      <span class="tag tag-infra">Infrastructure</span>
+    </div>
+
+    <p>DNS LB is blunt and slow. Traditional LB is precise and instant. They solve the same problem at different scales and with very different trade-offs.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>DNS load balancing</th><th>Traditional load balancer</th></tr></thead>
+        <tbody>
+          <tr><td>Mechanism</td><td>Multiple A records for same domain</td><td>Dedicated process routes each connection</td></tr>
+          <tr><td>Health checks</td><td>None — no awareness of dead servers</td><td>Active checks every 5–30 seconds</td></tr>
+          <tr><td>Failover speed</td><td>As slow as your TTL (minutes to hours)</td><td>Seconds — 2–3 failed health checks</td></tr>
+          <tr><td>Algorithms</td><td>Round robin only</td><td>All algorithms</td></tr>
+          <tr><td>Session stickiness</td><td>Impossible</td><td>Supported via cookie or IP hash</td></tr>
+          <tr><td>Traffic split</td><td>Approximate — TTL-limited</td><td>Precise — exact percentages</td></tr>
+          <tr><td>Cost</td><td>Free (just DNS records)</td><td>Hourly cost on cloud</td></tr>
+          <tr><td>Best use</td><td>Geo-routing across regions</td><td>Everything within a region</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>How They Work Together</h3>
+    <p>Production systems use <strong>both</strong>. DNS LB handles global, inter-region routing. Traditional LB handles precise intra-region distribution.</p>
+
+    <pre><code><span class="comment"># User in Chennai</span>
+<span class="key">DNS (GeoDNS)</span>    → routes to <span class="val">ap-south-1</span> (Mumbai region) based on geography
+<span class="key">AWS ALB</span>         → distributes across <span class="val">3 instances</span> in Mumbai with health checks
+<span class="key">Instances</span>       → scale up/down freely behind the ALB
+
+<span class="comment"># User in London</span>
+<span class="key">DNS (GeoDNS)</span>    → routes to <span class="val">eu-west-2</span> (London region)
+<span class="key">AWS ALB</span>         → distributes across instances in London</code></pre>
+  </section>
+
+  <!-- ══ SECTION 11: HTTP / HTTPS ══ -->
+  <section class="section" id="http">
+    <div class="section-header">
+      <span class="section-number">11</span>
+      <h2>HTTP vs HTTPS</h2>
+      <span class="tag tag-protocol">Protocol</span>
+    </div>
+
+    <div class="compare">
+      <div class="compare-side bad">
+        <h4>HTTP (port 80)</h4>
+        <ul>
+          <li>Plaintext — anyone on the network can read it</li>
+          <li>No encryption — ISP, router, attacker can intercept</li>
+          <li>No identity verification of server</li>
+          <li>Man-in-the-middle attacks trivially possible</li>
+          <li>Modern browsers show "Not Secure" warning</li>
+        </ul>
+      </div>
+      <div class="compare-side good">
+        <h4>HTTPS (port 443)</h4>
+        <ul>
+          <li>TLS-encrypted — ciphertext in transit</li>
+          <li>Server identity verified via SSL certificate</li>
+          <li>ISP can see you visited a domain — not the content</li>
+          <li>Certificate issued by trusted Certificate Authority</li>
+          <li>Required for PWAs, service workers, modern APIs</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>The TLS Handshake — How HTTPS Establishes Trust</h3>
+    <p>Before any encrypted data flows, the client and server run a <strong>handshake</strong> to agree on a cipher, verify the server's identity via its certificate, and derive a shared symmetric key. Read it top to bottom.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 404" role="img" aria-label="TLS handshake sequence between client and server">
+        <defs>
+          <marker id="m-tls" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+          <marker id="m-tls-teal" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#2dd4bf"/>
+          </marker>
+        </defs>
+        <!-- actors -->
+        <rect class="box box-accent" x="70" y="8" width="140" height="40" rx="8"/>
+        <text class="t center" x="140" y="33">Client · Browser</text>
+        <rect class="box box-teal" x="500" y="8" width="180" height="40" rx="8"/>
+        <text class="t center" x="590" y="33">Server / Load Balancer</text>
+        <!-- lifelines -->
+        <line x1="140" y1="48" x2="140" y2="392" stroke="rgba(255,255,255,0.14)" stroke-dasharray="4 5"/>
+        <line x1="590" y1="48" x2="590" y2="392" stroke="rgba(255,255,255,0.14)" stroke-dasharray="4 5"/>
+        <!-- 1 ClientHello -->
+        <text class="t3 center" x="365" y="76">1 · ClientHello — TLS versions + cipher list + client random</text>
+        <path class="edge" d="M140,86 L590,86" marker-end="url(#m-tls)"/>
+        <!-- 2 ServerHello -->
+        <text class="t3 center" x="365" y="112">2 · ServerHello — chosen cipher + server random</text>
+        <path class="edge" d="M590,122 L140,122" marker-end="url(#m-tls)"/>
+        <!-- 3 Certificate -->
+        <text class="t3 center" x="365" y="142">3 · Certificate — server public key, signed by a CA</text>
+        <path class="edge-accent" d="M590,152 L140,152" marker-end="url(#m-tls)"/>
+        <!-- client verifies -->
+        <rect class="box" x="58" y="168" width="172" height="28" rx="6"/>
+        <text class="ta center" x="144" y="186">verify cert ✓ (trust CA chain)</text>
+        <!-- 4 key exchange -->
+        <text class="t3 center" x="365" y="224">4 · pre-master secret — encrypted with the server's public key</text>
+        <path class="edge" d="M140,234 L590,234" marker-end="url(#m-tls)"/>
+        <!-- derive key band -->
+        <rect class="box box-amber" x="150" y="250" width="430" height="28" rx="6"/>
+        <text class="center" x="365" y="268" style="fill:var(--amber);font-size:11px;font-weight:600">both sides derive the same symmetric session key</text>
+        <!-- 5/6 finished -->
+        <text class="t3 center" x="365" y="300">5 · Finished (encrypted)</text>
+        <path class="edge" d="M140,310 L590,310" marker-end="url(#m-tls)"/>
+        <text class="t3 center" x="365" y="332">6 · Finished (encrypted)</text>
+        <path class="edge" d="M590,342 L140,342" marker-end="url(#m-tls)"/>
+        <!-- encrypted data -->
+        <text class="tm center" x="365" y="368">🔒 encrypted application data — fast symmetric AES</text>
+        <path class="edge-teal" d="M140,378 L590,378" marker-start="url(#m-tls-teal)" marker-end="url(#m-tls-teal)"/>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>The handshake authenticates the server (via its CA-signed certificate) and secretly agrees a symmetric key. Only then does real data flow — encrypted and fast. <strong>TLS 1.3</strong> compresses this to a single round-trip (1-RTT).</figcaption>
+    </figure>
+
+    <h3>SSL Termination at the Reverse Proxy</h3>
+    <p>In production, HTTPS is typically terminated at the reverse proxy or load balancer. The connection between the LB and your backend services can be plain HTTP on the internal private network. This simplifies certificate management — one certificate at the edge, not on every instance.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 184" role="img" aria-label="SSL termination: HTTPS from client to load balancer, plaintext HTTP to backend app servers">
+        <defs>
+          <marker id="m-ssl" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+          <marker id="m-ssl-teal" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#2dd4bf"/>
+          </marker>
+        </defs>
+        <!-- client -->
+        <rect class="box box-accent" x="12" y="58" width="130" height="64" rx="8"/>
+        <text class="t center" x="77" y="86">Client</text>
+        <text class="t3 center" x="77" y="104">browser</text>
+        <!-- client -> LB (HTTPS) -->
+        <text class="tm center" x="206" y="76">HTTPS · 443 🔒</text>
+        <path class="edge-teal" d="M142,90 L270,90" marker-end="url(#m-ssl-teal)"/>
+        <text class="t3 center" x="206" y="108">encrypted</text>
+        <!-- LB -->
+        <rect class="box box-teal" x="270" y="46" width="190" height="92" rx="10"/>
+        <text class="t center" x="365" y="80">Load Balancer /</text>
+        <text class="t center" x="365" y="98">Reverse Proxy</text>
+        <text class="tm center" x="365" y="120">🔒 SSL terminated here</text>
+        <!-- LB -> servers (HTTP) -->
+        <rect class="box" x="560" y="50" width="150" height="40" rx="8"/>
+        <text class="t2 center" x="635" y="74">App server 1</text>
+        <rect class="box" x="560" y="98" width="150" height="40" rx="8"/>
+        <text class="t2 center" x="635" y="122">App server 2</text>
+        <path class="edge" d="M460,82 C505,70 525,70 560,70" marker-end="url(#m-ssl)"/>
+        <path class="edge" d="M460,102 C505,118 525,118 560,118" marker-end="url(#m-ssl)"/>
+        <text class="t3 center" x="560" y="162">HTTP · plaintext (private network)</text>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>The certificate lives only at the edge: the client speaks encrypted HTTPS to the LB, which decrypts once and forwards plain HTTP across the trusted private network — so backends carry no cert and stay simple.</figcaption>
+    </figure>
+
+    <div class="callout callout-danger">
+      <div class="callout-label">Never Do This</div>
+      <p>Never serve sensitive production traffic over plain HTTP. Always use HTTPS. Free certificates are available via <strong>Let's Encrypt</strong> and are automatically managed by Cloudflare, AWS ACM, and Caddy.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 12: HTTP Versions ══ -->
+  <section class="section" id="http-versions">
+    <div class="section-header">
+      <span class="section-number">12</span>
+      <h2>HTTP/1.1 vs HTTP/2 vs HTTP/3</h2>
+      <span class="tag tag-protocol">Protocol</span>
+    </div>
+
+    <p>Same concept (request-response over the web) — radically different plumbing underneath. Each generation solved the bottlenecks of the previous one. Browsers auto-negotiate the best version the server supports.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>HTTP/1.1</th><th>HTTP/2</th><th>HTTP/3</th></tr></thead>
+        <tbody>
+          <tr><td>Released</td><td>1997</td><td>2015</td><td>2022</td></tr>
+          <tr><td>Adoption</td><td>Still common</td><td>~65% of sites</td><td>~30% and growing</td></tr>
+          <tr><td>Transport</td><td>TCP</td><td>TCP</td><td>QUIC (over UDP)</td></tr>
+          <tr><td>Multiplexing</td><td>No — one request at a time per connection</td><td>Yes — parallel streams on one TCP</td><td>Yes — independent QUIC streams</td></tr>
+          <tr><td>Head-of-line blocking</td><td>Yes — TCP-level</td><td>Partially fixed (still TCP HoLB)</td><td>Eliminated — QUIC streams are independent</td></tr>
+          <tr><td>Connection setup</td><td>1–2 RTT (TCP + TLS)</td><td>1–2 RTT</td><td>0–1 RTT (0-RTT on reconnect)</td></tr>
+          <tr><td>Server push</td><td>No</td><td>Yes (largely deprecated)</td><td>No</td></tr>
+          <tr><td>Connection migration</td><td>No</td><td>No</td><td>Yes — WiFi → 4G seamlessly</td></tr>
+          <tr><td>Header compression</td><td>No</td><td>HPACK</td><td>QPACK</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>When to Use Each</h3>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title"><span class="badge badge-blue">HTTP/1.1</span></div>
+        <p>Simple internal service-to-service APIs. Legacy systems where you control both ends. When you need maximum compatibility.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="badge badge-teal">HTTP/2</span></div>
+        <p>Default choice for all public-facing APIs and websites today. Default in Nginx, AWS ALB, and most cloud infrastructure. No extra work needed.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="badge badge-purple">HTTP/3</span></div>
+        <p>High-performance apps targeting mobile users. Video streaming (YouTube, Netflix). Fintech. Any high-latency or lossy network environment.</p>
+      </div>
+    </div>
+
+    <h3>The Head-of-Line Blocking Problem</h3>
+    <p>In HTTP/1.1, if one request stalls (e.g. a slow image), every subsequent request waits behind it on that TCP connection — like a checkout queue where one slow customer blocks everyone. HTTP/2 fixed this at the HTTP layer with multiplexing. HTTP/3 fixed it completely at the transport layer by replacing TCP with QUIC — each stream is independent, so a stalled stream doesn't block others.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 296" role="img" aria-label="Comparison of request flow in HTTP/1.1, HTTP/2 and HTTP/3">
+        <!-- Row 1: HTTP/1.1 -->
+        <text class="t" x="8" y="48">HTTP/1.1</text>
+        <text class="t3" x="8" y="64">TCP</text>
+        <rect class="box" x="126" y="28" width="586" height="48" rx="8"/>
+        <rect class="box box-amber" x="138" y="40" width="92" height="24" rx="5"/>
+        <text class="t2 center" x="184" y="56">R1 · slow</text>
+        <text class="tc center" x="246" y="58" style="font-size:15px">✗</text>
+        <rect class="box" x="262" y="40" width="86" height="24" rx="5"/>
+        <text class="t3 center" x="305" y="56">R2 wait</text>
+        <rect class="box" x="356" y="40" width="86" height="24" rx="5"/>
+        <text class="t3 center" x="399" y="56">R3 wait</text>
+        <text class="t3 center" x="590" y="56">one slow request blocks the rest</text>
+        <!-- Row 2: HTTP/2 -->
+        <text class="t" x="8" y="144">HTTP/2</text>
+        <text class="t3" x="8" y="160">TCP</text>
+        <text class="t3 center" x="419" y="112">parallel streams multiplexed over a single TCP connection</text>
+        <rect class="box box-teal" x="126" y="120" width="586" height="48" rx="8"/>
+        <rect class="box box-teal" x="138" y="132" width="150" height="24" rx="5"/>
+        <text class="t2 center" x="213" y="148">R1</text>
+        <rect class="box box-accent" x="292" y="132" width="150" height="24" rx="5"/>
+        <text class="t2 center" x="367" y="148">R2</text>
+        <rect class="box box-purple" x="446" y="132" width="150" height="24" rx="5"/>
+        <text class="t2 center" x="521" y="148">R3</text>
+        <text class="t3 center" x="660" y="148">1 TCP</text>
+        <!-- Row 3: HTTP/3 -->
+        <text class="t" x="8" y="240">HTTP/3</text>
+        <text class="t3" x="8" y="256">QUIC · UDP</text>
+        <text class="t3 center" x="400" y="196">independent QUIC streams — a stalled stream can't block the others</text>
+        <rect class="box box-green" x="138" y="210" width="440" height="20" rx="5"/>
+        <text class="tg center" x="358" y="224">stream 1 — flowing ✓</text>
+        <rect class="box box-amber" x="138" y="238" width="230" height="20" rx="5"/>
+        <text class="center" x="240" y="252" style="fill:var(--amber);font-size:11px;font-weight:600">stream 2 — stalled</text>
+        <text class="tc" x="376" y="253" style="font-size:14px">✗</text>
+        <text class="t3" x="400" y="252">others keep flowing</text>
+        <rect class="box box-green" x="138" y="266" width="440" height="20" rx="5"/>
+        <text class="tg center" x="358" y="280">stream 3 — flowing ✓</text>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>HTTP/1.1 serialises requests so one stall blocks all. HTTP/2 multiplexes many streams over one TCP connection (but TCP-level blocking can still bite). HTTP/3 uses independent QUIC streams, so a single stalled stream never blocks the rest.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ══ SECTION 13: Failure Scenarios ══ -->
+  <section class="section" id="failure">
+    <div class="section-header">
+      <span class="section-number">13</span>
+      <h2>Failure Scenarios</h2>
+      <span class="tag tag-advanced">Advanced</span>
+    </div>
+
+    <p>Understanding what happens when DNS or the load balancer goes down is critical. The honest answer: if the entry point is gone with no fallback, the request fails. System design's goal is making this vanishingly unlikely.</p>
+
+    <h3>Scenario A — DNS is Down</h3>
+    <p>The request never gets an IP. The browser shows <code>ERR_NAME_NOT_RESOLVED</code>. No connection is even attempted. However: if the user visited recently and the browser's DNS cache hasn't expired, the browser uses the cached IP and bypasses DNS entirely. New visitors are blocked; returning visitors (within TTL) are fine.</p>
+
+    <h3>Scenario B — Load Balancer is Down</h3>
+    <p>DNS resolved successfully. The request reaches the correct IP. But nobody answers — the user gets a <code>502 Bad Gateway</code> or connection timeout. In practice, cloud LBs (AWS ALB, GCP LB) run across multiple nodes and AZs, making a complete LB failure extremely rare. A single node dying is transparent.</p>
+
+    <h3>Protections Against These Scenarios</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Protection</th><th>What it covers</th></tr></thead>
+        <tbody>
+          <tr><td>Anycast DNS (Cloudflare/Route53)</td><td>Single DNS node failure — invisible to users</td></tr>
+          <tr><td>Two independent DNS providers</td><td>One DNS provider's complete outage</td></tr>
+          <tr><td>Low TTL on health-check failover records</td><td>Regional LB failure — reroutes in 10–60 seconds</td></tr>
+          <tr><td>High TTL on stable records</td><td>DNS downtime — cached answers keep existing users connected</td></tr>
+          <tr><td>Active-active multi-region</td><td>Full regional outage — traffic shifts automatically</td></tr>
+          <tr><td>Client-side retry with exponential backoff</td><td>Transient blips — app retries before showing user an error</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 14: Disaster Recovery ══ -->
+  <section class="section" id="dr">
+    <div class="section-header">
+      <span class="section-number">14</span>
+      <h2>Disaster Recovery</h2>
+      <span class="tag tag-advanced">Advanced</span>
+    </div>
+
+    <h3>RTO vs RPO</h3>
+    <div class="grid-2">
+      <div class="card" style="border-left: 3px solid var(--amber);">
+        <div class="card-title">RTO — Recovery Time Objective</div>
+        <p>How long can your app be <strong>down</strong> before it causes unacceptable business impact? e.g. "We can tolerate 30 seconds of downtime." This drives how fast your failover must be.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--purple);">
+        <div class="card-title">RPO — Recovery Point Objective</div>
+        <p>How much <strong>data loss</strong> can you tolerate? e.g. "We can lose at most 5 seconds of transactions." This drives how frequently you replicate data.</p>
+      </div>
+    </div>
+
+    <h3>The 4 Disaster Recovery Strategies</h3>
+    <div class="dr-grid">
+      <div class="dr-card">
+        <h4>Backup &amp; Restore</h4>
+        <span class="rto rto-gray">RTO: hours</span>
+        <ul>
+          <li>Cheapest option</li>
+          <li>Snapshots to S3/GCS</li>
+          <li>Restore from scratch on disaster</li>
+          <li>Acceptable for: internal tools, blogs, non-critical apps</li>
+        </ul>
+      </div>
+      <div class="dr-card">
+        <h4>Pilot Light</h4>
+        <span class="rto rto-blue">RTO: 10–30 min</span>
+        <ul>
+          <li>Core infra always on in DR region</li>
+          <li>DB replicating live</li>
+          <li>App servers OFF (scale up on disaster)</li>
+          <li>Acceptable for: mid-size SaaS, B2B</li>
+        </ul>
+      </div>
+      <div class="dr-card">
+        <h4>Warm Standby</h4>
+        <span class="rto rto-teal">RTO: 1–5 min</span>
+        <ul>
+          <li>Scaled-down copy running in DR region</li>
+          <li>Handles small traffic load</li>
+          <li>Scale to full capacity on disaster</li>
+          <li>Acceptable for: e-commerce, fintech, healthcare</li>
+        </ul>
+      </div>
+      <div class="dr-card">
+        <h4>Active-Active</h4>
+        <span class="rto rto-green">RTO: ~0 seconds</span>
+        <ul>
+          <li>All regions live and serving traffic</li>
+          <li>GeoDNS routes to nearest region</li>
+          <li>Region drops = instant failover</li>
+          <li>Acceptable for: Netflix, Uber, banking, exchanges</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>How DNS Becomes the Traffic Controller</h3>
+    <p>Route53 and Cloudflare run <strong>health checks</strong> against your endpoints every 10–30 seconds. When a region fails, they automatically stop returning its IP and start returning the DR region's IP. TTL on failover records is deliberately set to 10–60 seconds so the world picks up the change almost instantly.</p>
+
+    <figure class="diagram">
+      <svg viewBox="0 0 720 232" role="img" aria-label="DNS health-check failover from a failed primary region to a standby secondary region">
+        <defs>
+          <marker id="m-dr" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#6b7490"/>
+          </marker>
+          <marker id="m-dr-green" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#4ade80"/>
+          </marker>
+          <marker id="m-dr-coral" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M0,0 L6.5,3 L0,6 Z" fill="#f87171"/>
+          </marker>
+        </defs>
+        <!-- users -->
+        <rect class="box box-accent" x="12" y="92" width="110" height="56" rx="8"/>
+        <text class="t center" x="67" y="124">Users</text>
+        <path class="edge" d="M122,120 L196,120" marker-end="url(#m-dr)"/>
+        <!-- DNS -->
+        <rect class="box box-teal" x="196" y="84" width="176" height="72" rx="10"/>
+        <text class="t center" x="284" y="114">Route53 / GeoDNS</text>
+        <text class="t3 center" x="284" y="134">health checks · 10–30s</text>
+        <!-- primary (down) -->
+        <rect class="box box-coral dash" x="540" y="18" width="170" height="72" rx="10"/>
+        <text class="t center" x="625" y="48">Primary · Mumbai</text>
+        <text class="tc center" x="625" y="68">✗ region down</text>
+        <!-- secondary (active) -->
+        <rect class="box box-green" x="540" y="150" width="170" height="72" rx="10"/>
+        <text class="t center" x="625" y="180">Secondary · Singapore</text>
+        <text class="tg center" x="625" y="200">✓ now active</text>
+        <!-- DNS -> regions -->
+        <path class="edge-coral dash" d="M372,104 C450,70 470,56 540,52" marker-end="url(#m-dr-coral)"/>
+        <text class="tc center" x="455" y="62" style="font-size:15px">✗</text>
+        <path class="edge-green" d="M372,136 C450,170 470,184 540,188" marker-end="url(#m-dr-green)"/>
+        <text class="t3 center" x="452" y="176">TTL 60s · automatic</text>
+      </svg>
+      <figcaption><span class="fig-tag">Diagram</span>Route53 health-checks each region. When the primary fails it stops returning that IP and serves the standby instead — a deliberately low TTL (60s) makes the switch near-instant, with no human in the loop.</figcaption>
+    </figure>
+
+    <pre><code><span class="comment"># Normal state</span>
+myapp.com  →  PRIMARY    <span class="val">54.10.0.1</span>  (Mumbai)    ✓ healthy
+myapp.com  →  SECONDARY  <span class="val">13.20.0.2</span>  (Singapore) ✓ standby
+
+<span class="comment"># Mumbai goes down — Route53 detects within 30s</span>
+myapp.com  →  SECONDARY  <span class="val">13.20.0.2</span>  (Singapore) ✓ now active
+<span class="comment"># Automatic — no human intervention needed</span></code></pre>
+
+    <div class="callout callout-warn">
+      <div class="callout-label">The Hardest Problem</div>
+      <p>Routing traffic to a different region is easy. Keeping <strong>databases in sync</strong> across regions is the real engineering challenge. Solutions: CockroachDB, AWS Aurora Global, DynamoDB Global Tables, Cassandra multi-region. Trade-off: faster writes (eventual consistency) vs guaranteed sync (strong consistency, higher latency).</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 15: Real-world Incidents ══ -->
+  <section class="section" id="incidents">
+    <div class="section-header">
+      <span class="section-number">15</span>
+      <h2>Real-world Incidents</h2>
+      <span class="tag tag-advanced">Advanced</span>
+    </div>
+
+    <p>The best way to understand failure modes is to study real outages. Even the largest companies go down — the goal is <strong>fast recovery</strong>, not zero downtime forever.</p>
+
+    <div class="incident">
+      <div class="inc-title">Facebook — October 2021 (6 hours down)</div>
+      <p>A BGP misconfiguration caused Facebook to withdraw their own DNS routes from the internet. Their DNS became completely unreachable globally. Even internal engineers couldn't log in to fix it because their VPN used the same DNS. WhatsApp, Instagram, and Facebook were all simultaneously unavailable. Lesson: DNS is not a commodity — it's critical infrastructure.</p>
+    </div>
+
+    <div class="incident">
+      <div class="inc-title">Dyn DNS — October 2016 (several hours)</div>
+      <p>A massive DDoS attack hit Dyn, a major DNS provider. Twitter, Netflix, Reddit, GitHub, Spotify, and dozens of other sites went down for hours — not because those sites failed, but because Dyn couldn't resolve their domain names. The sites themselves were perfectly healthy. Lesson: using a single DNS provider is a single point of failure at the internet level.</p>
+    </div>
+
+    <div class="incident">
+      <div class="inc-title">AWS us-east-1 — Multiple incidents</div>
+      <p>AWS's primary US region has had several significant outages. Companies with multi-region setups (active-active or warm standby) experienced little to no user impact. Companies that deployed only to us-east-1 went fully down. Lesson: never rely on a single region for production workloads that have availability SLAs.</p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 16: Cheat Sheet ══ -->
+  <section class="section" id="cheatsheet">
+    <div class="section-header">
+      <span class="section-number">16</span>
+      <h2>Strategy Cheat Sheet</h2>
+      <span class="tag tag-advanced">Reference</span>
+    </div>
+
+    <h3>IP Addressing</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Decision</th><th>Strategy</th></tr></thead>
+        <tbody>
+          <tr><td>Production server IP</td><td>Static/Elastic IP — never changes</td></tr>
+          <tr><td>Client devices</td><td>Dynamic IP via DHCP — they don't need to be reached from outside</td></tr>
+          <tr><td>Replacing an instance</td><td>Reassign Elastic IP to new instance — DNS unchanged</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>DNS</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Decision</th><th>Strategy</th></tr></thead>
+        <tbody>
+          <tr><td>Before a migration</td><td>Lower TTL to 60s, wait for current TTL to expire first</td></tr>
+          <tr><td>After migration is stable</td><td>Raise TTL to 3600 or 86400 for performance</td></tr>
+          <tr><td>Route users to nearest region</td><td>GeoDNS (Route53 Latency Routing, Cloudflare)</td></tr>
+          <tr><td>Automatic regional failover</td><td>Route53 health-check failover with low TTL (60s)</td></tr>
+          <tr><td>Protect against DNS provider outage</td><td>Configure two independent DNS providers</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Proxies & Load Balancing</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Decision</th><th>Strategy</th></tr></thead>
+        <tbody>
+          <tr><td>Always in production</td><td>Reverse proxy (Nginx, Cloudflare, ALB) in front of app servers</td></tr>
+          <tr><td>Static assets (images, CSS, JS)</td><td>CDN (reverse proxy at edge) — cache globally</td></tr>
+          <tr><td>Identical server fleet</td><td>Round robin load balancing</td></tr>
+          <tr><td>Mixed hardware capacity</td><td>Weighted round robin</td></tr>
+          <tr><td>Long-lived connections / variable request time</td><td>Least connections</td></tr>
+          <tr><td>Canary deployment</td><td>Weighted round robin — 5% to new version</td></tr>
+          <tr><td>Stateful sessions (avoid this)</td><td>IP hash or store session in Redis</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>HTTP Protocol Choice</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Use case</th><th>Protocol</th></tr></thead>
+        <tbody>
+          <tr><td>Internal service-to-service</td><td>HTTP/1.1 is fine</td></tr>
+          <tr><td>Public API or website</td><td>HTTP/2 — default on all modern infrastructure</td></tr>
+          <tr><td>Mobile-first, video streaming, fintech</td><td>HTTP/3 — lower latency, connection migration</td></tr>
+          <tr><td>Any user-facing traffic</td><td>Always HTTPS — never plain HTTP</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Disaster Recovery Choice</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Situation</th><th>Strategy</th></tr></thead>
+        <tbody>
+          <tr><td>Internal tool, startup MVP</td><td>Backup &amp; Restore</td></tr>
+          <tr><td>Growing SaaS, tolerate 20 min downtime</td><td>Pilot Light</td></tr>
+          <tr><td>Payments, healthcare, customer-facing</td><td>Warm Standby</td></tr>
+          <tr><td>Stock exchange, banking, global consumer app</td><td>Active-Active multi-region</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<footer>
+  Networking Fundamentals — System Design Reference · Built from architect-level discussion · Topics: IP, DNS, Proxy, LB, API Gateway, HTTP, DR
+</footer>
+
+<script>
+  const sections = document.querySelectorAll('.section');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
